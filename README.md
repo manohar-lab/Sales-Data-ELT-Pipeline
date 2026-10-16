@@ -1,266 +1,380 @@
-# Sales Data ELT Pipeline
+# Website-to-Database ELT Pipeline
 
-A beginner-friendly Data Engineering project that demonstrates how to extract sales data from CSV files, load raw data into SQLite, transform data using SQL, and generate meaningful business insights through an interactive dashboard.
+A modular Python project that extracts data from public websites, loads the raw data into a SQLite database, and transforms it into clean, structured, analysis-ready data using SQL.
 
 ## 1. Project Overview
 
-Businesses generate sales data every day. However, raw sales records are not always ready for analysis because they may contain duplicate entries, inconsistent values, or unorganized information.
+The Website-to-Database ELT Pipeline automates the process of collecting data from a website and preparing it for further use.
 
-This project aims to build a simple, modular ELT pipeline that organizes raw sales data into a structured database and prepares it for business analysis.
+Users provide a website URL, and the application extracts supported webpage content, stores the raw records in a database, and transforms the stored data into a clean and structured format.
 
-The project will be developed incrementally in six phases, with each phase tested before moving to the next.
+The project follows the **ELT (Extract, Load, Transform)** approach, where data is loaded before transformations are applied.
 
-## 2. Project Objectives
+The application runs locally and displays execution results through the terminal. It does not require a dashboard, login system, or frontend application.
 
-- Read sales records from CSV files.
-- Load raw sales data into an SQLite database.
-- Transform and clean data using SQL.
-- Generate useful sales analytics.
-- Build an interactive dashboard.
-- Validate the pipeline and prepare it for deployment.
+## 2. Problem Statement
 
-## 3. Technology Stack
+Collecting information from websites manually can be time-consuming, repetitive, and difficult to organize.
 
-| Technology     | Purpose                             |
-| -------------- | ----------------------------------- |
-| Python         | Pipeline implementation             |
-| Pandas         | CSV handling and data inspection    |
-| CSV            | Initial raw data source             |
-| SQLite         | Database for storing sales records  |
-| SQL            | Data cleaning and transformation    |
-| Streamlit      | Interactive analytics dashboard     |
-| Plotly         | Interactive visualizations          |
-| Git and GitHub | Version control and project hosting |
+This project aims to automate website data collection and preparation through a reusable pipeline that can extract webpage content, preserve the original data, and transform it into structured database records.
 
-## 4. ELT Architecture
+## 3. Project Objectives
 
-The planned pipeline follows these steps:
+- Accept a website URL as input.
+- Extract supported content from publicly accessible webpages.
+- Store extracted data in SQLite before transformation.
+- Clean and validate data using SQL.
+- Identify and handle duplicate records.
+- Maintain pipeline execution logs and error information.
+- Organize the application using a modular architecture.
+- Test the complete ELT workflow locally.
+- Prepare the application for deployment after development is complete.
 
-```text
-          Raw Sales Dataset
-               CSV File
-                  |
-                  v
-             EXTRACTION
-         Read source records
-                  |
-                  v
-                LOADING
-       Store raw data in SQLite
-                  |
-                  v
-             TRANSFORMATION
-        Clean and aggregate data
-             using SQL
-                  |
-                  v
-          Analytical Data
-                  |
-                  v
-           STREAMLIT DASHBOARD
-          Charts and KPIs
-```
+## 4. How the Pipeline Works
 
-**Why ELT?**
+The pipeline follows three main stages.
 
-ELT stands for Extract, Load, Transform. Unlike traditional ETL, where transformation happens before loading, this project loads the raw records into the database first and performs the main transformations afterward.
+### Extract
 
-## 5. Dataset Description
+- Accept a website URL.
+- Fetch the webpage using Python Requests.
+- Parse accessible HTML using Beautiful Soup.
+- Extract available fields such as page titles, headings, links, and supported tabular content.
+- Validate the response and handle extraction errors.
 
-The project will use a sample sales dataset stored in `data/sales.csv`.
+### Load
 
-| Column           | Description                   |
-| ---------------- | ----------------------------- |
-| `order_id`       | Unique order identifier       |
-| `order_date`     | Date of the order             |
-| `customer_id`    | Customer identifier           |
-| `product_name`   | Name of the purchased product |
-| `category`       | Product category              |
-| `quantity`       | Number of units purchased     |
-| `unit_price`     | Price per unit                |
-| `city`           | Customer's city               |
-| `payment_method` | Payment method used           |
+- Store extracted records in a SQLite database.
+- Preserve the original extracted content in a raw-data table.
+- Record the source URL and extraction timestamp.
+- Track pipeline runs and their status.
 
-The initial dataset will contain at least 100 realistic sample records.
+### Transform
 
-## 6. Planned Analytics
+- Remove unwanted whitespace and normalize text.
+- Handle missing or invalid values.
+- Identify duplicate records.
+- Convert extracted information into structured database tables.
+- Save the cleaned results separately from the raw data.
 
-Once the pipeline is implemented, the dashboard will display:
+**Pipeline flow:**
 
-- Total sales revenue
-- Total number of orders
-- Total units sold
-- Best-selling products
-- City-wise sales performance
-- Monthly revenue trends
-- Product category performance
+`Website URL → Extract → Load Raw Data → Transform with SQL → Structured Data`
 
-These metrics will be calculated from the processed database records.
+## 5. Technology Stack
 
-## 7. Project Folder Structure
+| Technology | Purpose |
+|---|---|
+| Python | Core application logic |
+| Requests | Fetch webpage content |
+| Beautiful Soup | Parse HTML and extract data |
+| SQLite | Store raw and transformed data |
+| SQL | Clean, validate, and structure data |
+| pytest | Automated testing |
+| Git | Version control |
 
-The planned modular structure is:
+Playwright or another browser automation tool may be considered later if support for JavaScript-rendered websites becomes necessary.
+
+## 6. System Architecture
+
+The application will use a modular architecture with separate components for configuration, extraction, database operations, transformations, and pipeline orchestration.
+
+The main workflow is:
+
+1. The user supplies a URL.
+2. The extraction module retrieves and parses supported webpage content.
+3. The loading module saves raw records to SQLite.
+4. The transformation module processes the loaded records using SQL.
+5. The pipeline runner coordinates execution and reports the outcome.
+6. The logging module records successful runs and errors.
+
+Each module will have a clear responsibility so that it can be tested and maintained independently.
+
+## 7. Planned Folder Structure
 
 ```text
-sales-elt-pipeline/
-│
+website-elt-pipeline/
+├── config/
+│   └── settings.py
 ├── data/
-│   └── sales.csv
-│
-├── src/
-│   └── __init__.py
-│
-├── dashboard/
 │   └── .gitkeep
-│
-├── sql/
-│   └── .gitkeep
-│
-├── tests/
-│   └── .gitkeep
-│
+├── database/
+│   ├── connection.py
+│   └── schema.sql
+├── extractor/
+│   ├── __init__.py
+│   └── scraper.py
+├── loader/
+│   ├── __init__.py
+│   └── raw_loader.py
+├── transformations/
+│   ├── __init__.py
+│   └── transform.sql
+├── pipeline/
+│   ├── __init__.py
+│   └── runner.py
 ├── logs/
 │   └── .gitkeep
-│
-├── .gitignore
+├── tests/
+│   └── test_pipeline.py
+├── main.py
 ├── requirements.txt
-├── .env.example
+├── .gitignore
 └── README.md
 ```
 
-Additional modules will be introduced in later phases as the pipeline develops.
+The structure may be refined during Phase 1, but the separation of responsibilities must be maintained.
 
-## 8. Development Roadmap
+## 8. Database Design
 
-### Phase 1: Project Setup and Dataset Preparation
+SQLite will initially contain separate tables for raw data, transformed data, and pipeline execution history.
 
-- Create the project directory structure.
-- Prepare the sales CSV dataset.
-- Configure the Python environment.
-- Create the initial dependency and configuration files.
-- Validate the dataset.
+### Raw Data Table
 
-**Status:** Planned
+Stores extracted records before transformation.
 
-### Phase 2: Data Extraction
+Example fields:
 
-- Read CSV records using Python and Pandas.
-- Validate source columns and data types.
-- Handle file-reading errors.
-- Record extraction statistics.
+- `id`
+- `source_url`
+- `page_title`
+- `content`
+- `extracted_at`
 
-**Status:** Planned
+### Transformed Data Table
 
-### Phase 3: Data Loading
+Stores cleaned and structured records.
 
-- Create an SQLite database.
-- Define the raw sales table.
+Example fields:
+
+- `id`
+- `source_url`
+- `page_title`
+- `content`
+- `transformed_at`
+
+### Pipeline Runs Table
+
+Tracks pipeline execution.
+
+Example fields:
+
+- `run_id`
+- `source_url`
+- `started_at`
+- `completed_at`
+- `status`
+- `records_extracted`
+- `error_message`
+
+The final schema will depend on the supported extraction format. Different websites may expose different fields, so the application must handle variable content without assuming that every webpage has the same structure.
+
+## 9. Development Roadmap
+
+The project will be completed in six phases. Each phase must be tested before proceeding to the next.
+
+### Phase 1 — Project Setup
+
+- Initialize the project and virtual environment.
+- Install dependencies.
+- Create the modular folder structure.
+- Configure application settings.
+- Establish the SQLite connection.
+- Define the initial database schema.
+- Verify that the application starts successfully.
+
+**Expected outcome:** A working project foundation with database connectivity.
+
+### Phase 2 — Website Extraction
+
+- Accept a URL through the command line.
+- Validate the URL.
+- Fetch accessible webpage content.
+- Parse HTML using Beautiful Soup.
+- Extract supported content fields.
+- Handle timeouts, HTTP errors, and invalid responses.
+- Test extraction against suitable public webpages.
+
+**Expected outcome:** A reusable extraction module that returns structured records.
+
+### Phase 3 — Database Loading
+
+- Create the raw-data storage workflow.
 - Load extracted records into SQLite.
-- Verify database records.
+- Store source URLs and extraction timestamps.
+- Handle database errors and empty extraction results.
+- Verify that records persist after the application exits.
 
-**Status:** Planned
+**Expected outcome:** Successfully extracted data stored in the raw-data table.
 
-### Phase 4: Data Transformation
+### Phase 4 — SQL Transformations
 
-- Identify and handle duplicate records.
-- Handle missing and invalid values.
-- Calculate revenue.
-- Create SQL queries for analytical metrics.
-- Prepare clean analytical tables or views.
+- Read records from the raw-data table.
+- Clean whitespace and normalize text.
+- Handle missing values.
+- Identify duplicate records.
+- Insert cleaned records into the transformed-data table.
+- Validate transformation results.
 
-**Status:** Planned
+**Expected outcome:** Cleaned, structured data stored separately from the original data.
 
-### Phase 5: Dashboard Development
+### Phase 5 — Pipeline Integration
 
-- Build a Streamlit dashboard.
-- Display sales KPIs.
-- Create monthly revenue charts.
-- Display product and city-wise analytics.
-- Add useful data filters.
+- Connect extraction, loading, and transformation modules.
+- Implement a single pipeline execution command.
+- Track pipeline runs and record counts.
+- Add consistent logging and error handling.
+- Ensure failures are reported clearly.
+- Test the complete end-to-end workflow.
 
-**Status:** Planned
+**Expected outcome:** One command executes the complete ELT pipeline.
 
-### Phase 6: Integration, Testing and Deployment Preparation
+### Phase 6 — Testing and Deployment Preparation
 
-- Connect the complete ELT workflow.
-- Run the pipeline end to end.
-- Test repeated executions and data correctness.
-- Verify dashboard results.
-- Prepare GitHub documentation and deployment instructions.
+- Run unit and integration tests.
+- Test invalid URLs, empty pages, and failed requests.
+- Validate raw and transformed database records.
+- Improve configuration and error messages.
+- Finalize documentation and setup instructions.
+- Prepare the application for deployment where appropriate.
 
-**Status:** Planned
+**Expected outcome:** A tested, documented, reproducible ELT application.
 
-## 9. Local Setup
+## 10. Installation
 
 ### Prerequisites
 
-- Python 3.11 or newer
-- Git (optional during initial development)
-- VS Code or Antigravity
+- Python 3.11 or later
+- pip
+- Git (optional)
 
-### Windows PowerShell
+### Setup
 
-Create and activate a virtual environment:
+Clone the repository or open the project directory, then create a virtual environment.
+
+**Windows PowerShell:**
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.venv\Scripts\Activate.ps1
 ```
 
-Install the project dependencies:
+Install the project dependencies after `requirements.txt` has been created:
 
 ```powershell
-python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Verify Python and Pandas:
+Run the application using the entry point implemented during development:
 
 ```powershell
-python --version
-python -c "import pandas; print(pandas.__version__)"
+python main.py
 ```
 
-These are initial setup instructions. The complete pipeline will become runnable as its modules are implemented in subsequent phases.
+The exact command-line arguments will be documented when the pipeline runner is implemented.
 
-## 10. Testing Strategy
+## 11. Example Usage
 
-The project will be validated incrementally.
+A completed version of the application will support a workflow similar to:
 
-- Dataset schema and record-count validation
-- Missing-value and duplicate checks
-- Database loading verification
-- SQL transformation correctness
-- Pipeline integration testing
-- Dashboard data consistency checks
+```text
+Enter website URL:
+https://example.com
 
-Tests will be added as the relevant functionality is implemented.
+[1/3] Extracting webpage data...
+[2/3] Loading raw data into SQLite...
+[3/3] Transforming data using SQL...
 
-## 11. Future Deployment
+Pipeline completed successfully.
 
-The project will initially run locally. After the six development phases are completed, suitable deployment options for the dashboard and database will be evaluated.
+Records extracted: 15
+Records loaded: 15
+Records transformed: 15
+Status: SUCCESS
+```
 
-No cloud deployment or hosted database is assumed to be available at the beginning.
+These numbers are illustrative only. Actual results will depend on the website and the records available.
 
-## 12. Expected Outcome
+## 12. Error Handling and Reliability
 
-The final goal is a functional, beginner-friendly ELT data engineering project that demonstrates:
+The application should handle:
 
-- Source data ingestion
-- Raw data storage
-- SQL-based transformations
-- Business analytics
-- Data visualization
-- Modular Python development
-- Basic testing and reproducibility
+- Invalid or malformed URLs.
+- Connection failures and request timeouts.
+- HTTP error responses.
+- Empty or unsupported webpages.
+- Missing webpage fields.
+- Duplicate records.
+- SQLite connection and insertion errors.
+- SQL transformation failures.
 
-The project is intended as a practical learning project and portfolio demonstration of fundamental ELT concepts.
+Failed runs should be logged with useful diagnostic information. Sensitive information, if any, must not be written to logs.
 
----
+## 13. Scope and Limitations
 
-**Project:** Sales Data ELT Pipeline  
-**Category:** Data Engineering  
-**Architecture:** Extract → Load → Transform → Analyze  
-**Development plan:** Six phases  
-**Initial execution:** Local environment  
-**Database:** SQLite
+### Included
+
+- URL-based webpage extraction.
+- Support for selected public HTML content.
+- SQLite raw-data storage.
+- SQL-based transformations.
+- Pipeline execution history.
+- Terminal output and logging.
+- Automated tests.
+
+### Not included in the initial version
+
+- Web dashboard or graphical frontend.
+- User registration or authentication.
+- Cloud data warehouses.
+- Distributed processing tools such as Spark.
+- Automatic crawling of entire websites.
+- Bypassing authentication, paywalls, CAPTCHAs, or anti-bot restrictions.
+- Guaranteed support for every website or dynamically rendered page.
+
+Website access rules, terms of service, and applicable laws must be respected. Where appropriate, official APIs should be preferred over scraping.
+
+## 14. Testing Strategy
+
+Testing will be performed throughout development.
+
+- **Unit tests:** Validate individual extraction, loading, and transformation functions.
+- **Database tests:** Verify schema creation and data persistence.
+- **Transformation tests:** Confirm cleaning and duplicate handling.
+- **Integration tests:** Verify that all pipeline stages work together.
+- **Error tests:** Check invalid URLs, failed requests, and database errors.
+
+Tests should use controlled HTML fixtures or suitable test pages so they do not depend unnecessarily on external website availability.
+
+## 15. Future Enhancements
+
+After the six-phase project is complete, possible extensions include:
+
+- Support for multiple website templates.
+- Scheduled extraction jobs.
+- Incremental data loading.
+- Support for JavaScript-rendered pages.
+- Additional database backends.
+- Export to CSV or JSON.
+- Data quality reports.
+
+These are optional future improvements and will not be implemented prematurely.
+
+## 16. Project Success Criteria
+
+The project will be considered complete when:
+
+- A user can provide a supported public website URL.
+- The application extracts available content.
+- Raw records are stored in SQLite.
+- SQL transformations produce clean, structured records.
+- Pipeline runs and errors are recorded.
+- The complete workflow executes reliably.
+- Automated tests pass.
+- Setup and execution instructions are documented.
+
+## Conclusion
+
+The Website-to-Database ELT Pipeline demonstrates the practical application of web scraping, database loading, SQL transformations, modular Python development, and automated testing.
+
+Its focus is on building a real, working data engineering pipeline that is simple to run, easy to understand, and extensible without unnecessary complexity.
