@@ -22,6 +22,13 @@ SCHEMA_PATH = BASE_DIR / "database" / "schema.sql"
 # Log file configuration
 LOG_FILE_PATH = LOGS_DIR / "pipeline.log"
 
+# Scraper & HTTP Configuration
+REQUEST_TIMEOUT = 10  # Seconds
+MAX_RESPONSE_SIZE = 5 * 1024 * 1024  # 5 MB in bytes
+MAX_REDIRECTS = 5
+USER_AGENT = "WebsiteELTPipelineBot/1.0 (+https://github.com/manohar-lab/Website-to-Database-ELT-Pipeline)"
+ALLOWED_CONTENT_TYPES = ("text/html", "application/xhtml+xml")
+
 
 def init_directories() -> None:
     """Safely create required runtime directories if they do not exist."""
