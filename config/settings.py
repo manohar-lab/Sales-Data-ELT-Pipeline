@@ -36,6 +36,18 @@ def init_directories() -> None:
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 
+class _DynamicStdoutHandler(logging.StreamHandler):
+    """StreamHandler that dynamically references the active sys.stdout."""
+
+    @property
+    def stream(self):
+        return sys.stdout
+
+    @stream.setter
+    def stream(self, val):
+        pass
+
+
 def setup_logging(log_level: int = logging.INFO) -> logging.Logger:
     """Configure basic console and file logging.
     
@@ -59,8 +71,8 @@ def setup_logging(log_level: int = logging.INFO) -> logging.Logger:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
-        # Console handler
-        console_handler = logging.StreamHandler(sys.stdout)
+        # Console handler dynamically bound to sys.stdout
+        console_handler = _DynamicStdoutHandler()
         console_handler.setLevel(log_level)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)

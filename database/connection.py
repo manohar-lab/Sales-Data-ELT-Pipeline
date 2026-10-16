@@ -44,6 +44,41 @@ def get_connection(db_path: Optional[Path | str] = None) -> sqlite3.Connection:
         raise
 
 
+def _migrate_schema_if_needed(conn: sqlite3.Connection) -> None:
+    """Ensure existing databases receive backward-compatible column additions."""
+    cursor = conn.cursor()
+
+    # 1. Migrate raw_data columns if table already exists
+    cursor.execute("PRAGMA table_info(raw_data);")
+    existing_raw_cols = {row["name"] for row in cursor.fetchall()}
+    if existing_raw_cols:
+        if "headings" not in existing_raw_cols:
+            cursor.execute("ALTER TABLE raw_data ADD COLUMN headings TEXT;")
+        if "links" not in existing_raw_cols:
+            cursor.execute("ALTER TABLE raw_data ADD COLUMN links TEXT;")
+        if "content_hash" not in existing_raw_cols:
+            cursor.execute("ALTER TABLE raw_data ADD COLUMN content_hash TEXT;")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_raw_data_content_hash ON raw_data (source_url, content_hash);"
+        )
+
+    # 2. Migrate transformed_data columns if table already exists
+    cursor.execute("PRAGMA table_info(transformed_data);")
+    existing_trans_cols = {row["name"] for row in cursor.fetchall()}
+    if existing_trans_cols:
+        if "raw_id" not in existing_trans_cols:
+            cursor.execute("ALTER TABLE transformed_data ADD COLUMN raw_id INTEGER;")
+        if "headings" not in existing_trans_cols:
+            cursor.execute("ALTER TABLE transformed_data ADD COLUMN headings TEXT;")
+        if "links" not in existing_trans_cols:
+            cursor.execute("ALTER TABLE transformed_data ADD COLUMN links TEXT;")
+        if "content_hash" not in existing_trans_cols:
+            cursor.execute("ALTER TABLE transformed_data ADD COLUMN content_hash TEXT;")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_transformed_data_hash ON transformed_data (source_url, content_hash);"
+        )
+
+
 def init_db(
     db_path: Optional[Path | str] = None,
     schema_path: Optional[Path | str] = None,
@@ -75,6 +110,7 @@ def init_db(
     conn = get_connection(target_db)
     try:
         with conn:
+            _migrate_schema_if_needed(conn)
             conn.executescript(schema_sql)
         logger.info(f"Database schema initialized successfully at: {target_db}")
     except sqlite3.Error as e:
