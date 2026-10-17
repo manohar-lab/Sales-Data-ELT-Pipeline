@@ -14,7 +14,11 @@ from typing import Optional, Sequence
 
 from config import settings
 from database.connection import init_db
-from extractor.scraper import ExtractionError, extract_page_data
+from extractor.scraper import (
+    ExtractionError,
+    extract_page_data,
+    sanitize_url_for_logging,
+)
 from loader.raw_loader import get_raw_record, load_raw_data
 from pipeline.runner import run_pipeline
 from transformations.transformer import TransformationError, transform_raw_data
@@ -57,12 +61,13 @@ def run_phase_2_extraction(url: str) -> int:
     print(" Phase 2: Website Extraction Engine")
     print("=" * 65)
 
+    safe_url = sanitize_url_for_logging(url)
     logger = settings.setup_logging()
-    logger.info(f"Starting extraction for URL: {url}")
+    logger.info(f"Starting extraction for URL: {safe_url}")
 
     try:
         data = extract_page_data(url)
-        logger.info(f"Successfully extracted data from: {url}")
+        logger.info(f"Successfully extracted data from: {safe_url}")
 
         print(f"Source URL:       {data['source_url']}")
         print(f"Page Title:       {data['page_title'] or '(No title found)'}")
@@ -79,11 +84,11 @@ def run_phase_2_extraction(url: str) -> int:
 
     except ExtractionError as exc:
         print(f"Extraction Error: {exc}", file=sys.stderr)
-        logger.error(f"Extraction failed for {url}: {exc}")
+        logger.error(f"Extraction failed for {safe_url}: {exc}")
         return 1
     except Exception as exc:
         print(f"Unexpected Error: {exc}", file=sys.stderr)
-        logger.error(f"Unexpected failure during extraction for {url}: {exc}", exc_info=True)
+        logger.error(f"Unexpected failure during extraction for {safe_url}: {exc}", exc_info=True)
         return 1
 
 
@@ -173,8 +178,9 @@ def run_phase_5_pipeline(url: str) -> int:
     print(" Phase 5: End-to-End Pipeline Execution")
     print("=" * 65)
 
+    safe_url = sanitize_url_for_logging(url)
     logger = settings.setup_logging()
-    logger.info(f"Initiating full ELT pipeline for: {url}")
+    logger.info(f"Initiating full ELT pipeline for: {safe_url}")
 
     summary = run_pipeline(url, extract_fn=extract_page_data)
 
@@ -251,10 +257,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return run_phase_4_transform()
     elif args.verify_loader:
         return run_phase_3_verify_loader()
-    elif args.url and args.extract_only:
+    elif args.url is not None and args.extract_only:
         return run_phase_2_extraction(args.url)
-    elif args.url:
+    elif args.url is not None:
         return run_phase_5_pipeline(args.url)
+    elif args.extract_only:
+        print("Error: --extract-only requires --url <URL>", file=sys.stderr)
+        return 1
     else:
         return run_phase_1_setup()
 

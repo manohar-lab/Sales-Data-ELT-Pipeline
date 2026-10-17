@@ -277,3 +277,55 @@ def test_cli_full_pipeline_success(capsys, temp_db):
         assert "Raw Record ID:    1" in captured.out
         assert "[3/3] TRANSFORMATION (SQL):" in captured.out
         assert "Transformed Rows: 1" in captured.out
+
+
+def test_cli_full_pipeline_failure(capsys):
+    """Verify CLI reports failure details and exits nonzero when full pipeline fails."""
+    with patch("main.run_pipeline") as mock_runner:
+        mock_runner.return_value = {
+            "status": "FAILED",
+            "run_id": 99,
+            "source_url": "https://example.com/broken",
+            "failed_stage": "LOADING",
+            "error_message": "Simulated disk full error",
+        }
+        exit_code = main.main(["--url", "https://example.com/broken"])
+        assert exit_code == 1
+
+        captured = capsys.readouterr()
+        assert "Pipeline Failed at stage [LOADING]: Simulated disk full error" in captured.err
+
+
+def test_cli_extract_only_without_url(capsys):
+    """Verify CLI rejects --extract-only when no --url is supplied."""
+    exit_code = main.main(["--extract-only"])
+    assert exit_code == 1
+
+    captured = capsys.readouterr()
+    assert "Error: --extract-only requires --url <URL>" in captured.err
+
+
+def test_cli_verify_loader(capsys, tmp_path):
+    """Verify CLI --verify-loader executes loader verification with isolated database."""
+    isolated_db = tmp_path / "cli_verify_loader.db"
+    with patch("config.settings.DATABASE_PATH", isolated_db):
+        exit_code = main.main(["--verify-loader"])
+        assert exit_code == 0
+
+        captured = capsys.readouterr()
+        assert "Phase 3: Database Loading Verification" in captured.out
+        assert "Initial Load Result:     INSERTED" in captured.out
+        assert "Duplicate Check Result:  DUPLICATE" in captured.out
+
+
+def test_cli_transform(capsys, tmp_path):
+    """Verify CLI --transform executes SQL transformations on raw records with isolated database."""
+    isolated_db = tmp_path / "cli_transform.db"
+    with patch("config.settings.DATABASE_PATH", isolated_db):
+        exit_code = main.main(["--transform"])
+        assert exit_code == 0
+
+        captured = capsys.readouterr()
+        assert "Phase 4: SQL Transformation Engine" in captured.out
+        assert "Status:             SUCCESS" in captured.out
+

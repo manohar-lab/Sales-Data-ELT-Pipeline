@@ -21,6 +21,28 @@ from config import settings
 logger = logging.getLogger("elt_pipeline")
 
 
+def sanitize_url_for_logging(url: str) -> str:
+    """Return URL without sensitive credentials or query parameters for safe logging.
+
+    Args:
+        url: The raw URL string.
+
+    Returns:
+        str: Sanitized URL string safe for log outputs.
+    """
+    if not isinstance(url, str):
+        return "<invalid-url>"
+    try:
+        parsed = urllib.parse.urlsplit(url.strip())
+        query_indicator = "?..." if parsed.query else ""
+        netloc = parsed.hostname or ""
+        if parsed.port:
+            netloc = f"{netloc}:{parsed.port}"
+        return f"{parsed.scheme}://{netloc}{parsed.path}{query_indicator}"
+    except Exception:
+        return "<invalid-url>"
+
+
 # =====================================================================
 # Custom Exception Hierarchy
 # =====================================================================
@@ -186,7 +208,8 @@ def fetch_html(url: str, session: Optional[requests.Session] = None) -> str:
 
     try:
         while True:
-            logger.info(f"Fetching URL: {current_url}")
+            safe_current_url = sanitize_url_for_logging(current_url)
+            logger.info(f"Fetching URL: {safe_current_url}")
             try:
                 response = http.get(
                     current_url,
@@ -197,14 +220,14 @@ def fetch_html(url: str, session: Optional[requests.Session] = None) -> str:
                     verify=True,
                 )
             except requests.Timeout as e:
-                logger.error(f"Request timed out for {current_url}: {e}")
+                logger.error(f"Request timed out for {safe_current_url}: {e}")
                 raise RequestError(f"Request timed out after {settings.REQUEST_TIMEOUT}s: {e}") from e
             except requests.ConnectionError as e:
-                logger.error(f"Connection error for {current_url}: {e}")
-                raise RequestError(f"Connection error while fetching {current_url}: {e}") from e
+                logger.error(f"Connection error for {safe_current_url}: {e}")
+                raise RequestError(f"Connection error while fetching {safe_current_url}: {e}") from e
             except requests.RequestException as e:
-                logger.error(f"HTTP request failed for {current_url}: {e}")
-                raise RequestError(f"HTTP request failed for {current_url}: {e}") from e
+                logger.error(f"HTTP request failed for {safe_current_url}: {e}")
+                raise RequestError(f"HTTP request failed for {safe_current_url}: {e}") from e
 
             # Handle redirects manually to revalidate destination IP and scheme
             if response.status_code in (301, 302, 303, 307, 308):
@@ -222,7 +245,8 @@ def fetch_html(url: str, session: Optional[requests.Session] = None) -> str:
                     )
 
                 next_url = urllib.parse.urljoin(current_url, location)
-                logger.info(f"Redirecting ({redirect_count}/{settings.MAX_REDIRECTS}) to: {next_url}")
+                safe_next_url = sanitize_url_for_logging(next_url)
+                logger.info(f"Redirecting ({redirect_count}/{settings.MAX_REDIRECTS}) to: {safe_next_url}")
                 # Revalidate next destination against SSRF rules
                 current_url = validate_url(next_url)
                 continue
@@ -304,8 +328,9 @@ def extract_page_data(url: str, html_content: Optional[str] = None) -> dict[str,
     try:
         soup = BeautifulSoup(html, "html.parser")
     except Exception as e:
-        logger.error(f"HTML parsing failed for {url}: {e}")
-        raise ParsingError(f"Failed to parse HTML from {url}: {e}") from e
+        safe_url = sanitize_url_for_logging(url)
+        logger.error(f"HTML parsing failed for {safe_url}: {e}")
+        raise ParsingError(f"Failed to parse HTML from {safe_url}: {e}") from e
 
     # 1. Page Title
     page_title = ""

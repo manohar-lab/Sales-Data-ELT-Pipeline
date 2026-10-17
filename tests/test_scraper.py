@@ -337,10 +337,11 @@ def test_cli_phase_2_success(capsys):
         "extracted_at": "2026-10-16T12:00:00+00:00",
     }
     with patch("main.extract_page_data", return_value=mock_data):
-        exit_code = main.main(["--url", "https://example.com"])
+        exit_code = main.main(["--url", "https://example.com", "--extract-only"])
         assert exit_code == 0
 
         captured = capsys.readouterr()
+        assert "Phase 2: Website Extraction Engine" in captured.out
         assert "Page Title:       Sample Title" in captured.out
         assert "Headings Found:   2" in captured.out
         assert "Links Found:      1" in captured.out
@@ -350,7 +351,7 @@ def test_cli_phase_2_success(capsys):
 def test_cli_phase_2_failure(capsys):
     """Verify CLI reports error and exits nonzero when extraction fails."""
     with patch("main.extract_page_data", side_effect=URLValidationError("Invalid test URL")):
-        exit_code = main.main(["--url", "http://invalid-url"])
+        exit_code = main.main(["--url", "http://invalid-url", "--extract-only"])
         assert exit_code == 1
 
         captured = capsys.readouterr()

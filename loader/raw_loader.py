@@ -37,15 +37,7 @@ class LoaderValidationError(LoaderError):
 # Helpers
 # =====================================================================
 
-def sanitize_url_for_logging(url: str) -> str:
-    """Return URL without sensitive query parameters for clean logging."""
-    try:
-        parsed = urllib.parse.urlsplit(url)
-        # Log scheme, host, and path; redact query string if present
-        query_indicator = "?..." if parsed.query else ""
-        return f"{parsed.scheme}://{parsed.netloc}{parsed.path}{query_indicator}"
-    except Exception:
-        return "<invalid-url>"
+from extractor.scraper import sanitize_url_for_logging
 
 
 def compute_content_hash(
